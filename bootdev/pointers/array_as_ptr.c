@@ -78,3 +78,12 @@ int main(int argc, char const *argv[])
     
     return 0;
 }
+
+// So after reviewing this, I can see one way that pointer math will
+// get me into trouble if I'm trying guess at where something is in memory
+// and going by pointer locations and what I believe the size of a value is
+// or the order they are in or if they do or don't have padding, etc. 
+
+// Something else I'm noting is that with arrays, pointer arithmetic 
+// correlates with the index number as well. arr[2] is *(arr + 2) and 
+// arr[5] is *(arr + 5), etc.
