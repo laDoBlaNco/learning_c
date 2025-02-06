@@ -88,7 +88,11 @@ int main(int argc, char const *argv[])
 
 void dump_graphics(graphics_t gsettings[10]){
     int *ptr = (int *)gsettings;
-    for (int i = 0; i < 30; i++) {
+    // for (int i = 0; i < 30; i++) {
+    // going through it again I'm changing it so I can see whats
+    // really happening under the hood with the management of 
+    // memory. Its 10 items with 3 fields each
+    for (int i = 0; i < (10 * 3); i++) {
         printf("settings[%d] = %d\n",i,ptr[i]);
     }
 }

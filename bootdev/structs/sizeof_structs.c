@@ -21,6 +21,12 @@
  * 'padding' included. CPUs don't like accessing data that isn't aligned
  * so C inserts padding to maintain alignment (e.g. every 4  bytes in 
  * the example below)  NOTE: layouts can vary depending on the arch.
+ * 
+ * NOTE: That alignment is based on the word bounderies, which are just
+ * the way memory is normally split up by the arch. Normally either 
+ * in bytes of 4 or 8. The smallest word typically being 4. So if
+ * a char is only 1byte, C will adding 3bytes of padding to get to
+ * at least 4.
  */
 
 #include <stdio.h>

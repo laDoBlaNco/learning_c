@@ -51,6 +51,14 @@ int main(int argc, char const *argv[])
     // Assignment: Complete the core_utils_func to print:
     // sizeof core_utilization in core_utils_func: X
     int core_utilization[] = {43, 67, 89, 92, 71, 43, 56, 12};
+    // NOTE: I didn't notice this before by the length of an array even 
+    // when its not decayed isn't just using sizeof(array). Remember that 
+    // sizeof gives us the amount of bytes in total memory, not taking
+    // into consideration the type size. This means the same way we need
+    // to malloc(count * sizeof(T)). To get the length of the array we need
+    // to go backwards with (sizeof(array) / sizeof(array[0])) dividing the
+    // full size of the array (in this case 32 bytes) by the sizeof one element
+    // (in this case 4 for int) which gives us a length of 32 / 4 = 8
     int len = sizeof(core_utilization) / sizeof(core_utilization[0]);
     printf("sizeof core_utilization in main: %zu\n", sizeof(core_utilization));
     printf("len of core_utilization: %d\n", len);

@@ -92,17 +92,22 @@ int smart_append(TextBuffer *dest, const char* src){
 
     const int MAX_BUFFER = 64;
     size_t len = strlen(src);
-    int available_space = MAX_BUFFER - (dest->length + 1);
+    // int available_space = MAX_BUFFER - (dest->length + 1);
+    // a better way to do this instead of using the max buffer constant
+    // is using sizeof directly on the struct field. That way if it 
+    // changes in the future our function still just works
+    int available_space = sizeof(dest->buffer) - dest->length - 1;
+    int src_len = strlen(src);
 
     if (strlen(src) > available_space) {
         strncat(dest->buffer,src,available_space);
         // dest->buffer[63] = 0; // strncat does this
-        dest->length = MAX_BUFFER - 1;
+        // dest->length = MAX_BUFFER - 1;
+        dest->length = sizeof(dest->buffer) - 1;
         return 1;
     } else {
         strcat(dest->buffer,src);
-        int new_len = dest->length + len;
-        dest->length = new_len;
+        dest->length += src_len;
         // dest->buffer[new_len] = 0; // strcat does this
         return 0;
     }

@@ -20,3 +20,19 @@
  * Remember to get the address of a variable so that we can store it
  * in a pointer variable, I can use the address-of-operator (&)
  */
+#include <stdio.h>
+
+int main(int argc, char const *argv[])
+{
+
+    int age = 48;
+    int *ptr_to_age = &age;
+
+    printf("This is the address of age: %p\n",&age);
+    printf("This is the pointer to age: %p\n",ptr_to_age);
+
+    // and I see its the same. The pointer is the address.
+
+
+    return 0;
+}
