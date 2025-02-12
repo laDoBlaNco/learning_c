@@ -1,15 +1,24 @@
-/** Vectors:
- *
- * So no I've arrived at the first container type! What makes vector3
- * not like the other types is that it holds other snek objects. That
- * means it 'references' them. They are contained in its x,y, and z 
- * fields.
+/** Handling Cycles: 
  * 
- * When I create a vector and place objects in those fields, I need to 
- * increment teh refcount of each of those objects! Otherwise I might
- * accidently free its content and be left with a vector holding 
- * garbage memory. 
+ * I've built a simple reference counting garbage collector. It can
+ * handle: 
+ *      ▫️ Simple types, like INTEGER and FLOAT
+ *      ▫️ Dynamically allocated types like STRING
+ *      ▫️ Static Container types like VECTOR3
+ *      ▫️ Dynamic Container types like ARRAY
  * 
+ * However there's one little problem with my implementation. Take 
+ * a look at the code below in main
+ * 
+ * I create a first array and shove the second array inside of it.
+ * Everything here works as expected. The trouble arises when I 
+ * introduce a cycle: for example, first contains second but second
+ * also contains first... 
+ * 
+ * In the case below both refcounts are stuck at one after being 
+ * decremented because when first has its refcount decremented it 
+ * already had 2. So it only drops to 1, which doesn't trigger a free
+ * of the second array. 
  */
 
 #include <stdio.h>
@@ -20,6 +29,22 @@
 
 int main(int argc, char const *argv[])
 {
+    snek_object_t *first = new_snek_array(1);
+    snek_object_t *second = new_snek_array(1);
+    // refcounts: first = 1, second = 1
+    snek_array_set(first, 0, second);
+    // refcounts: first = 1, second = 2
+    snek_array_set(second, 0, first);
+    // refcounts: first = 2, second = 2
+    refcount_dec(first);
+    // refcounts: first = 1, second = 2
+    refcount_dec(second);
+    // refcounts: first = 1, second = 1
+    // all free, BUT NOT REALLY
+
+    // The above won't compile and we get a segfault since we are left
+    // with references to memory that doesn't exist.
+    
     printf("\nCOMPILATION SUCCESS!!!\n\n");
 
     return 0;
@@ -47,15 +72,17 @@ void refcount_free(snek_object_t *obj)
     // since it holds the actual value. I don't need to worry about
     // the data inside the object since its stored directly in the
     // object not on the heap.
+    // Something I learned from Teej, instead of writing 'free(obj) so
+    // much, I can only put the special 'frees' in the switch and
+    // just free the obj at the end after we break out of the switch.
+    // since at the end of every option I'm freeing obj
     switch (obj->kind)
     {
     case INTEGER:
     case FLOAT:
-        free(obj);
         break;
     case STRING:
         free(obj->data.v_string);
-        free(obj);
         break;
     case VECTOR3:
         // I started by just freeing everything, but as per the instructions
@@ -65,9 +92,18 @@ void refcount_free(snek_object_t *obj)
         refcount_dec(obj->data.v_vector3.y);
         refcount_dec(obj->data.v_vector3.z);
         break;
+    case ARRAY:
+        for (size_t i = 0; i < obj->data.v_array.size; i++)
+        {
+            refcount_dec(obj->data.v_array.elements[i]);
+        }
+        free(obj->data.v_array.elements);
+        break;
     default:
         return;
     }
+    // that's what this was here for. Now I get it.
+    free(obj);
 }
 
 void refcount_inc(snek_object_t *obj)
@@ -112,6 +148,38 @@ snek_object_t *new_snek_array(size_t size)
     obj->data.v_array = (snek_array_t){.size = size, .elements = elements};
 
     return obj;
+}
+
+// snek_array-set update to increment refcount on object set. If there was
+// already an element at that index, decrement its refcount as it was
+// replaced
+bool snek_array_set(snek_object_t *snek_obj, size_t index, snek_object_t *value)
+{
+    if (snek_obj == NULL ||
+        value == NULL ||
+        snek_obj->kind != ARRAY ||
+        index >= snek_obj->data.v_array.size)
+    {
+        return false;
+    }
+    refcount_inc(value);
+    if (snek_obj->data.v_array.elements[index])
+    {
+        refcount_dec(snek_obj->data.v_array.elements[index]);
+    }
+    snek_obj->data.v_array.elements[index] = value;
+    return true;
+}
+
+snek_object_t *snek_array_get(snek_object_t *snek_obj, size_t index)
+{
+    if (snek_obj == NULL ||
+        snek_obj->kind != ARRAY ||
+        index >= snek_obj->data.v_array.size)
+    {
+        return NULL;
+    }
+    return snek_obj->data.v_array.elements[index];
 }
 
 // Updating function to refcount_inc each of its 3 objects.

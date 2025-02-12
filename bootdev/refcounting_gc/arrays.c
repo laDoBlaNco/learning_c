@@ -1,15 +1,8 @@
-/** Vectors:
+/** Arrays:
  *
- * So no I've arrived at the first container type! What makes vector3
- * not like the other types is that it holds other snek objects. That
- * means it 'references' them. They are contained in its x,y, and z 
- * fields.
- * 
- * When I create a vector and place objects in those fields, I need to 
- * increment teh refcount of each of those objects! Otherwise I might
- * accidently free its content and be left with a vector holding 
- * garbage memory. 
- * 
+ * Recounting for an array is similar to the vector3 kinds. Except, an
+ * array has a dynamic size, which adds complexity and means I'll 
+ * nned to use a loop
  */
 
 #include <stdio.h>
@@ -65,9 +58,17 @@ void refcount_free(snek_object_t *obj)
         refcount_dec(obj->data.v_vector3.y);
         refcount_dec(obj->data.v_vector3.z);
         break;
+    case ARRAY:
+        for (size_t i = 0; i < obj->data.v_array.size; i++)
+        {
+            refcount_dec(obj->data.v_array.elements[i]);
+        }
+        free(obj->data.v_array.elements);
+        break;
     default:
         return;
     }
+    free(obj);
 }
 
 void refcount_inc(snek_object_t *obj)
@@ -112,6 +113,38 @@ snek_object_t *new_snek_array(size_t size)
     obj->data.v_array = (snek_array_t){.size = size, .elements = elements};
 
     return obj;
+}
+
+// snek_array-set update to increment refcount on object set. If there was
+// already an element at that index, decrement its refcount as it was 
+// replaced
+bool snek_array_set(snek_object_t *snek_obj, size_t index, snek_object_t *value)
+{
+    if (snek_obj == NULL ||
+        value == NULL ||
+        snek_obj->kind != ARRAY ||
+        index >= snek_obj->data.v_array.size)
+    {
+        return false;
+    }
+    refcount_inc(value);
+    if (snek_obj->data.v_array.elements[index])
+    {
+        refcount_dec(snek_obj->data.v_array.elements[index]);
+    }
+    snek_obj->data.v_array.elements[index] = value;
+    return true;
+}
+
+snek_object_t *snek_array_get(snek_object_t *snek_obj, size_t index)
+{
+    if (snek_obj == NULL ||
+        snek_obj->kind != ARRAY ||
+        index >= snek_obj->data.v_array.size)
+    {
+        return NULL;
+    }
+    return snek_obj->data.v_array.elements[index];
 }
 
 // Updating function to refcount_inc each of its 3 objects.
